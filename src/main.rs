@@ -1,34 +1,67 @@
 use clap::{Arg, Command};
 use colored::*;
-use serde_json::Value;
+use serde_json::{Value, Map};
 use std::io::{Read, Write};
 use std::net::TcpStream;
+
+/// Converts a loose key:value string into valid JSON
+fn parse_loose_json(input: &str) -> Result<String, std::io::Error> {
+    let mut map = Map::new();
+
+    // Remove surrounding braces if present
+    let trimmed = input.trim().trim_start_matches('{').trim_end_matches('}');
+
+    for pair in trimmed.split(',') {
+        let mut kv = pair.splitn(2, ':');
+        let key = kv
+            .next()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid key"))?
+            .trim();
+        let value = kv
+            .next()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid value"))?
+            .trim();
+
+        // Insert as string
+        map.insert(key.to_string(), Value::String(value.to_string()));
+    }
+
+    Ok(serde_json::to_string(&map)?)
+}
 
 fn send_request(
     mut stream: TcpStream,
     method: &str,
     host: &str,
+    port: &str,
     route: &str,
     body: Option<&str>,
 ) -> std::io::Result<()> {
     // Build request headers
     let mut request = format!(
-        "{} {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n",
-        method, route, host
+        "{} {} HTTP/1.1\r\nHost: {}:{}\r\nConnection: close\r\n",
+        method, route, host, port
     );
 
-    // Add content type + content length for POST/PUT
+    // Add body if present
     if let Some(b) = body {
+        // Convert loose JSON to valid JSON
+        let body_string = parse_loose_json(b)?;
+        let body_bytes = body_string.as_bytes();
+
         request.push_str(&format!(
-            "Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
-            b.len(),
-            b
+            "Content-Type: application/json\r\nContent-Length: {}\r\n\r\n",
+            body_bytes.len()
         ));
+        request.push_str(&body_string);
     } else {
         request.push_str("\r\n");
     }
 
-    // Send the request
+    // Debug: print raw request
+    println!("{}:\n{}", "Request Sent".bold().yellow(), request);
+
+    // Send request
     stream.write_all(request.as_bytes())?;
 
     // Read and display response
@@ -56,9 +89,9 @@ fn send_request(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Command::new("neo")
-        .version("1.1")
+        .version("1.3")
         .author("Nader")
-        .about("HTTP client CLI tool")
+        .about("HTTP client CLI tool with auto JSON formatting")
         .arg(
             Arg::new("url")
                 .short('u')
@@ -97,20 +130,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("body")
                 .help("JSON body for POST/PUT requests")
                 .num_args(1),
-        ).after_help(
-               "EXAMPLES:\n\
-             \n  🔍 GET request:\n    neo_client --url 127.0.0.1 -p 8000 -m GET -r /api\n\
-             \n  ➕ POST request:\n    neo_client --url 127.0.0.1 -p 8000 -m POST -r /api/users -b '{\"name\":\"nader\"}'\n\
-             \n  📝 PUT request:\n    neo_client --url 127.0.0.1 -p 8000 -m PUT -r /api/users/1 -b '{\"name\":\"updated name\"}'\n\
-             \n  ❌ DELETE request:\n    neo_client --url 127.0.0.1 -p 8000 -m DELETE -r /api/users/1\n\
-             \nTIPS:\n\
-             - Use quotes around JSON bodies to avoid shell parsing issues.\n\
-             - You can test your local Node.js/Express or Flask APIs directly.\n\
-             - Default port is 80, route is '/'."
         )
         .get_matches();
 
-    // Extract arguments
     let url = matches.get_one::<String>("url").unwrap();
     let method = matches.get_one::<String>("method").unwrap().to_uppercase();
     let port = matches.get_one::<String>("port").unwrap();
@@ -124,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "Connected to the server!".green());
 
     // Send request
-    send_request(stream, &method, &url, &route, body)?;
+    send_request(stream, &method, url, port, route, body)?;
 
     Ok(())
 }
