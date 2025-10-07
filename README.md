@@ -138,14 +138,7 @@ neo_client --url 127.0.0.1 -p 8000 -m DELETE -r /api/users/1
 | [`colored`](https://docs.rs/colored/)       | Terminal color formatting   |
 | [`serde_json`](https://docs.rs/serde_json/) | JSON parsing and formatting |
 
----
 
-## 🧑‍💻 Author
-
-**Nader**
-Rust developer passionate about systems programming, embedded systems, and backend development.
-
----
 
 ## 📄 License
 
