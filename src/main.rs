@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use colored::*;
+use serde_json::Value;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
@@ -13,10 +14,29 @@ fn get_request(mut stream: TcpStream, host: &str, route: &str) -> std::io::Resul
     // Send the request
     stream.write_all(request.as_bytes())?;
 
-    // Read and print the response
+    // Read and store the response
     let mut response = String::new();
     stream.read_to_string(&mut response)?;
-    println!("{}", response);
+
+    // Split headers and body
+    let parts: Vec<&str> = response.splitn(2, "\r\n\r\n").collect();
+    let head = parts[0];
+    let body = parts.get(1).unwrap_or(&"");
+
+    println!("{}", "Response Headers:".bold().yellow());
+    println!("{}\n", head.blue());
+
+    // Try to pretty-print JSON body
+    println!("{}", "Response Body:".bold().yellow());
+    match serde_json::from_str::<Value>(body) {
+        Ok(json_val) => {
+            let formatted = serde_json::to_string_pretty(&json_val)?;
+            println!("{}", formatted.green());
+        }
+        Err(_) => {
+            println!("{}", body);
+        }
+    }
 
     Ok(())
 }
