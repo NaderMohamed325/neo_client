@@ -97,6 +97,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("body")
                 .help("JSON body for POST/PUT requests")
                 .num_args(1),
+        ).after_help(
+               "EXAMPLES:\n\
+             \n  🔍 GET request:\n    neo_client --url 127.0.0.1 -p 8000 -m GET -r /api\n\
+             \n  ➕ POST request:\n    neo_client --url 127.0.0.1 -p 8000 -m POST -r /api/users -b '{\"name\":\"nader\"}'\n\
+             \n  📝 PUT request:\n    neo_client --url 127.0.0.1 -p 8000 -m PUT -r /api/users/1 -b '{\"name\":\"updated name\"}'\n\
+             \n  ❌ DELETE request:\n    neo_client --url 127.0.0.1 -p 8000 -m DELETE -r /api/users/1\n\
+             \nTIPS:\n\
+             - Use quotes around JSON bodies to avoid shell parsing issues.\n\
+             - You can test your local Node.js/Express or Flask APIs directly.\n\
+             - Default port is 80, route is '/'."
         )
         .get_matches();
 
