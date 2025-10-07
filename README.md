@@ -1,79 +1,31 @@
+# 🛰️ Neo Client — A Simple HTTP CLI in Rust
 
-
-````markdown
-# 🦀 neo_client — Simple HTTP Client CLI Tool
-
-`neo_client` is a lightweight command-line HTTP client built in **Rust**, designed for learning and experimentation with low-level networking using raw **TCP sockets**.  
-It lets you send basic HTTP requests (like `GET`) directly from your terminal — no external libraries like `reqwest` needed.
+**Neo Client** is a lightweight and colorful HTTP command-line client written in **Rust**.  
+It lets you send **GET**, **POST**, **PUT**, and **DELETE** requests directly from your terminal — perfect for testing APIs without needing external tools like Postman or curl.
 
 ---
 
 ## 🚀 Features
 
-✅ Send simple `GET` requests over TCP  
-✅ Specify **URL**, **port**, and **route**  
-✅ Built-in colorful CLI output  
-✅ Graceful error handling  
-✅ Simple and fast — built in pure Rust  
+- Supports **GET**, **POST**, **PUT**, and **DELETE**
+- Simple CLI interface built with [`clap`](https://docs.rs/clap/latest/clap/)
+- Colorized output with [`colored`](https://docs.rs/colored/)
+- JSON pretty-printing via [`serde_json`](https://docs.rs/serde_json/)
+- Lightweight and fast — built from scratch using TCP sockets
+- Graceful fallback for non-JSON responses
 
 ---
 
-## 🧩 Example Usage
+## ⚙️ Installation
 
-### 1️⃣ Basic Request
-```bash
-neo_client --url example.com
-````
-
-➡ Sends a `GET /` request to port `80`.
-
-### 2️⃣ With Route
+### 1️⃣ Clone the repository
 
 ```bash
-neo_client --url jsonplaceholder.typicode.com --route /posts/1
-```
-
-➡ Fetches `/posts/1` from JSONPlaceholder’s fake REST API.
-
-### 3️⃣ Custom Port
-
-```bash
-neo_client --url example.com --port 8080
-```
-
-➡ Connects to port `8080` instead of default `80`.
-
-### 4️⃣ Explicit Method
-
-```bash
-neo_client --url example.com --method GET
-```
-
-➡ Currently only `GET` is supported — more coming soon!
-
----
-
-## ⚙️ CLI Options
-
-| Flag | Long Option | Description                          | Default      |
-| ---- | ----------- | ------------------------------------ | ------------ |
-| `-u` | `--url`     | Targeted host (without `http://`)    | **required** |
-| `-m` | `--method`  | HTTP method (e.g., GET, POST)        | `GET`        |
-| `-p` | `--port`    | Target port number                   | `80`         |
-| `-r` | `--route`   | Specific route path (e.g., `/posts`) | `/`          |
-
----
-
-## 🏗️ Installation
-
-### 1️⃣ Clone the repo
-
-```bash
-git clone https://github.com/<your-username>/neo_client.git
+git clone https://github.com/yourusername/neo_client.git
 cd neo_client
 ```
 
-### 2️⃣ Build the project
+### 2️⃣ Build the binary
 
 ```bash
 cargo build --release
@@ -82,54 +34,140 @@ cargo build --release
 ### 3️⃣ Run it
 
 ```bash
-./target/release/neo_client --url example.com
+./target/release/neo_client --help
 ```
 
 ---
 
-## 🧠 How It Works
+## 🧠 Usage
 
-`neo_client` uses Rust’s standard library only:
-
-* `std::net::TcpStream` — to connect directly to servers over TCP.
-* `std::io::{Read, Write}` — to send HTTP requests and read raw responses.
-* `clap` — to handle command-line argument parsing.
-* `colored` — for pretty colored output.
-
-Example request built by `neo_client`:
-
-```
-GET / HTTP/1.1
-Host: example.com
-Connection: close
+```bash
+neo_client [OPTIONS]
 ```
 
----
+### 📋 Options
 
-## 🧰 Tech Stack
-
-* 🦀 **Rust**
-* ⚙️ **clap** — CLI argument parsing
-* 🎨 **colored** — terminal colors
-
----
-
-## 📦 Future Plans
-
-* [ ] Support `POST`, `PUT`, `DELETE`
-* [ ] Allow sending JSON bodies (`--body`)
-* [ ] Display response headers/body separately
-* [ ] Add timeout and error recovery
-* [ ] Pretty-print JSON responses
+| Flag           | Description                                  | Default | Example              |
+| -------------- | -------------------------------------------- | ------- | -------------------- |
+| `-u, --url`    | Target host (without `http://`)              | —       | `127.0.0.1`          |
+| `-m, --method` | HTTP method (`GET`, `POST`, `PUT`, `DELETE`) | `GET`   | `POST`               |
+| `-p, --port`   | Server port                                  | `80`    | `8000`               |
+| `-r, --route`  | API route or endpoint                        | `/`     | `/api/users`         |
+| `-b, --body`   | JSON body for `POST`/`PUT`                   | —       | `'{"name":"nader"}'` |
 
 ---
 
+## 💡 Examples
 
-## 🪪 License
+### 🔍 GET Request
 
-This project is licensed under the **MIT License** — feel free to use, modify, and share.
+```bash
+neo_client --url 127.0.0.1 -p 8000 -m GET -r /api
+```
+
+**Output:**
+
+```
+Connected to the server!
+Response Headers:
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+
+Response Body:
+{
+    "status": "success",
+    "data": {
+        "name": "nader"
+    }
+}
+```
 
 ---
 
-### ⭐ If you like this project, consider giving it a star on GitHub!
+### ➕ POST Request
 
+```bash
+neo_client --url 127.0.0.1 -p 8000 -m POST -r /api/users -b '{"name":"nader"}'
+```
+
+---
+
+### 📝 PUT Request
+
+```bash
+neo_client --url 127.0.0.1 -p 8000 -m PUT -r /api/users/1 -b '{"name":"updated name"}'
+```
+
+---
+
+### ❌ DELETE Request
+
+```bash
+neo_client --url 127.0.0.1 -p 8000 -m DELETE -r /api/users/1
+```
+
+---
+
+## 🧩 Example Internal Flow
+
+1. The CLI parses arguments using `clap`
+2. Opens a raw TCP connection with `TcpStream`
+3. Builds the HTTP request manually:
+
+   ```
+   METHOD /route HTTP/1.1
+   Host: example.com
+   Content-Type: application/json
+   Content-Length: N
+   ```
+
+4. Sends it through the socket
+5. Reads the response and:
+
+   - Splits headers and body
+   - Pretty-prints JSON responses
+   - Colors headers (blue) and JSON (green)
+
+---
+
+## 🧰 Dependencies
+
+| Crate                                       | Purpose                     |
+| ------------------------------------------- | --------------------------- |
+| [`clap`](https://docs.rs/clap/)             | CLI argument parsing        |
+| [`colored`](https://docs.rs/colored/)       | Terminal color formatting   |
+| [`serde_json`](https://docs.rs/serde_json/) | JSON parsing and formatting |
+
+---
+
+## 🧑‍💻 Author
+
+**Nader**
+Rust developer passionate about systems programming, embedded systems, and backend development.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — free to use, modify, and distribute.
+
+---
+
+## ⭐️ Future Enhancements
+
+- [ ] Support for HTTPS (via `rustls`)
+- [ ] File upload support (`multipart/form-data`)
+- [ ] Save and load request profiles
+- [ ] Response time and latency metrics
+- [ ] Pretty colorized JSON keys and values
+- [ ] Support for Auth headers (Bearer, Basic)
+
+---
+
+### 💬 Example Summary
+
+✅ Simple
+✅ Fast
+✅ Educational
+
+A perfect project to understand how HTTP works under the hood — without any heavy dependencies.
