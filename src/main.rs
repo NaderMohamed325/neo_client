@@ -88,51 +88,55 @@ fn send_request(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = Command::new("neo")
-        .version("1.3")
-        .author("Nader")
-        .about("HTTP client CLI tool with auto JSON formatting")
-        .arg(
-            Arg::new("url")
-                .short('u')
-                .long("url")
-                .help("Target host (without http://)")
-                .num_args(1)
-                .required(true),
-        )
-        .arg(
-            Arg::new("method")
-                .short('m')
-                .long("method")
-                .help("HTTP method (GET, POST, PUT, DELETE)")
-                .num_args(1)
-                .default_value("GET"),
-        )
-        .arg(
-            Arg::new("port")
-                .short('p')
-                .long("port")
-                .help("Server port")
-                .num_args(1)
-                .default_value("80"),
-        )
-        .arg(
-            Arg::new("route")
-                .short('r')
-                .long("route")
-                .help("API route (e.g., /api/users)")
-                .num_args(1)
-                .default_value("/"),
-        )
-        .arg(
-            Arg::new("body")
-                .short('b')
-                .long("body")
-                .help("JSON body for POST/PUT requests")
-                .num_args(1),
-        )
-        .get_matches();
-
+let matches = Command::new("neo")
+    .version("1.3")
+    .author("Nader")
+    .about("HTTP client CLI tool with auto JSON formatting")
+    .arg(
+        Arg::new("url")
+            .short('u')
+            .long("url")
+            .help("Target host (without http://)")
+            .long_help("Example: --url 127.0.0.1")
+            .num_args(1)
+            .required(true),
+    )
+    .arg(
+        Arg::new("method")
+            .short('m')
+            .long("method")
+            .help("HTTP method (GET, POST, PUT, DELETE)")
+            .long_help("Example: -m POST")
+            .num_args(1)
+            .default_value("GET"),
+    )
+    .arg(
+        Arg::new("port")
+            .short('p')
+            .long("port")
+            .help("Server port")
+            .long_help("Example: -p 8000")
+            .num_args(1)
+            .default_value("80"),
+    )
+    .arg(
+        Arg::new("route")
+            .short('r')
+            .long("route")
+            .help("API route (e.g., /api/users)")
+            .long_help("Example: -r /api/users")
+            .num_args(1)
+            .default_value("/"),
+    )
+    .arg(
+        Arg::new("body")
+            .short('b')
+            .long("body")
+            .help("JSON body for POST/PUT requests")
+            .long_help("Example: -b {name:nader,email:test@example.com}")
+            .num_args(1),
+    )
+    .get_matches();
     let url = matches.get_one::<String>("url").unwrap();
     let method = matches.get_one::<String>("method").unwrap().to_uppercase();
     let port = matches.get_one::<String>("port").unwrap();
